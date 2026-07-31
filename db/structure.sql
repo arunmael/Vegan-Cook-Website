@@ -1,32 +1,34 @@
+drop database if exists vegan_cook_website;
+create database vegan_cook_website;
+use vegan_cook_website;
 
-begin;
 
 create table category(
-    category_id int primary key,
-    cat_name varchar(255) not null
+    category_id int auto_increment primary key,
+    cat_name varchar(255) unique not null
 );
 
 
 create table ingredient(
-    ingredient_id int primary key,
-    ing_name varchar(255) not null
+    ingredient_id int auto_increment primary key,
+    ing_name varchar(255) unique not null
 );
 
 create table origin(
-    origin_id int primary key,
+    origin_id int auto_increment primary key,
     ori_name varchar(255) not null
 );
 
 
 create table user(
-    user_id int primary key,
-    user_name varchar(255) not null,
+    user_id int auto_increment primary key,
+    user_name varchar(255) unique not null,
     user_email varchar(255) not null,
     user_password varchar(255) not null
 );
 
 create table recipe(
-    recipe_id int primary key,
+    recipe_id int auto_increment primary key,
     rec_name varchar(255) not null,
     rec_description text not null,
     rec_instructions text not null,

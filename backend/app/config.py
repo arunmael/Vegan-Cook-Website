@@ -1,5 +1,10 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import URL
+
+
+PROJECT_DIR = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
@@ -7,12 +12,12 @@ class Settings(BaseSettings):
 
     db_host: str = "127.0.0.1"
     db_port: int = 3306
-    db_name: str = "vegan_cook_db"
+    db_name: str = "vegan_cook_website"
     db_user: str = "vegan_cook_user"
     db_password: str = "change_me"
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=PROJECT_DIR / ".env",
         env_file_encoding="utf-8",
     )
 
