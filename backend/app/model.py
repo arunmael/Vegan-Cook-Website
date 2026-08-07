@@ -6,17 +6,28 @@ class Base(DeclarativeBase):
     """Basisklasse für alle SQLAlchemy-Models."""
 
 
-class Ingredient(Base):
-    """SQLAlchemy-Model für die Tabelle `ingredient`."""
+class User(Base):
+    """SQLAlchemy-Model für die Tabelle `User`."""
 
-    __tablename__ = "ingredient"
+    __tablename__ = "user"
 
-    ingredient_id: Mapped[int] = mapped_column(
+    user_id: Mapped[int] = mapped_column(
         primary_key=True,
         autoincrement=True,
     )
-    ing_name: Mapped[str] = mapped_column(
+    user_name: Mapped[str] = mapped_column(
         String(255),
         unique=True,
         nullable=False,
     )
+    user_email: Mapped[str] = mapped_column(
+        String(255),
+        unique=True,
+        nullable=False,
+    )
+    user_password: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        )
+
+

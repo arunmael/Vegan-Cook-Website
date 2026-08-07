@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     db_port: int = 3306
     db_name: str = "vegan_cook_website"
     db_user: str = "vegan_cook_user"
-    db_password: str = "change_me"
+    db_password: str
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_DIR / ".env",

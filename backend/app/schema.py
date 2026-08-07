@@ -1,6 +1,29 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 
+
+class UserBase(BaseModel):
+    """Daten, die für einen Benutzer erwartet werden."""
+
+    user_name: str = Field(min_length=1, max_length=255)
+    user_email: str = Field(min_length=1, max_length=255)
+
+
+class UserCreate(UserBase):
+    """Daten, die beim Erstellen eines Benutzers erwartet werden."""
+
+    user_password: str = Field(min_length=8, max_length=255)
+
+
+class UserResponse(UserBase):
+    """Daten, die FastAPI für einen Benutzer zurückgibt."""
+
+    user_id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+
 class IngredientCreate(BaseModel):
     """Daten, die beim Erstellen einer Zutat erwartet werden."""
 
