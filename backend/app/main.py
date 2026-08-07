@@ -2,14 +2,16 @@ from fastapi import FastAPI
 
 from backend.app.db import check_database_connection
 from backend.app.routes.create import router as create_router
+from backend.app.routes.select import router as select_router
 
 
 app = FastAPI(title="Vegan Cook Website")
 app.include_router(create_router)
+app.include_router(select_router)
 
 
 @app.get("/api/health")
-def health_check():
+def health_check(): 
     check_database_connection()
 
     return {
@@ -17,7 +19,7 @@ def health_check():
         "database": "reachable",
     }
 
-def user():
+def creat_user():
     UserName = str(input("Enter your username: ")),
     UserEmail = str(input("Enter your email: ")),
     UserPassword = str(input("Enter your password: "))
@@ -29,7 +31,7 @@ def user():
 
 
 def main():
-    user()
+    creat_user()
 
 if __name__ == "__main__":
     main()

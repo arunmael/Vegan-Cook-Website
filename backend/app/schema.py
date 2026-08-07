@@ -23,6 +23,20 @@ class UserResponse(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class UserLoginEmail(BaseModel):
+    """Daten, die für die Anmeldung eines Benutzers per E-Mail erwartet werden."""
+
+    user_email: str = Field(min_length=1, max_length=255)
+    user_password: str = Field(min_length=8, max_length=255)
+
+
+class UserLoginName(BaseModel):
+    """Daten, die für die Anmeldung eines Benutzers per Benutzername erwartet werden."""
+
+    user_name: str = Field(min_length=1, max_length=255)
+    user_password: str = Field(min_length=8, max_length=255)
+
+
 
 class IngredientCreate(BaseModel):
     """Daten, die beim Erstellen einer Zutat erwartet werden."""
