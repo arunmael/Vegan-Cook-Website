@@ -16,7 +16,7 @@ Am 31. Juli 2026 wurde die SQL-Struktur verbessert und fertig geplant. Ausserdem
 
 Am 7. August 2026 wurde die Benutzerregistrierung im Backend umgesetzt. Dazu wurden das `User`-Model, passende Pydantic-Schemas und der Endpunkt `POST /api/create-user` ergänzt. Passwörter werden vor dem Speichern mit PBKDF2 und einem zufälligen Salt gehasht. Zusätzlich wurde ein Startskript erstellt, das das Datenbankpasswort verdeckt im Terminal abfragt.
 
-Danach wurde der E-Mail-Login begonnen. Der Endpunkt `POST /api/login-user-email` sucht einen Benutzer anhand seiner E-Mail-Adresse und prüft das eingegebene Passwort gegen den gespeicherten PBKDF2-Hash. Eine dauerhafte Anmeldung über eine Session oder ein signiertes Token ist noch nicht umgesetzt.
+Am 8. August 2026 wurde der Login erweitert. Benutzer können in einem gemeinsamen Eingabefeld entweder ihre E-Mail-Adresse oder ihren Benutzernamen eingeben. Der Endpunkt `POST /api/login` sucht die passende Anmeldung und prüft das eingegebene Passwort gegen den gespeicherten PBKDF2-Hash. Ausserdem wurde eine kleine HTML-Oberfläche erstellt und über JavaScript mit der API verbunden. Eine dauerhafte Anmeldung über eine Session oder ein signiertes Token ist noch nicht umgesetzt.
 
 Momentan besteht das Projekt aus drei wichtigen Teilen:
 
@@ -43,7 +43,8 @@ vegan-cook-website/
 │   ├── Base Modell ERD.drawio.png
 │   └── structure.sql
 ├── frontend/
-│   └── app.js
+│   ├── app.js
+│   └── index.html
 ├── .env.example
 ├── start_backend.sh
 ├── DOKUMENTATION.md
@@ -60,7 +61,7 @@ Aktuell gibt es folgende Tabellen:
 
 ### `user`
 
-Hier werden die Benutzer gespeichert. Ein Benutzer besitzt eine automatisch erstellte ID, einen eindeutigen Benutzernamen, eine E-Mail-Adresse und einen Passwort-Hash. Das ursprüngliche Passwort wird nicht im Klartext gespeichert. Das SQLAlchemy-Model kennzeichnet auch die E-Mail-Adresse als eindeutig; in `structure.sql` fehlt dieser `UNIQUE`-Constraint momentan jedoch noch.
+Hier werden die Benutzer gespeichert. Ein Benutzer besitzt eine automatisch erstellte ID, einen eindeutigen Benutzernamen, eine eindeutige E-Mail-Adresse und einen Passwort-Hash. Das ursprüngliche Passwort wird nicht im Klartext gespeichert. Sowohl das SQLAlchemy-Model als auch `structure.sql` kennzeichnen Benutzername und E-Mail-Adresse als eindeutig.
 
 ### `recipe`
 
@@ -124,7 +125,7 @@ Dieser Endpunkt prüft die Verbindung zur Datenbank. Wenn alles funktioniert, ko
 }
 ```
 
-Ausserdem werden die beiden `APIRouter` aus `routes/create.py` und `routes/select.py` eingebunden. Dadurch gehören die Endpunkte zum Erstellen und zum Anmelden eines Benutzers zur Hauptanwendung.
+Ausserdem werden die beiden `APIRouter` aus `routes/create.py` und `routes/select.py` eingebunden. Dadurch gehören die Endpunkte zum Erstellen und zum Anmelden eines Benutzers zur Hauptanwendung. Mit `StaticFiles` wird zusätzlich der Ordner `frontend` unter `/` ausgeliefert. Dadurch kann der Browser `index.html` und `app.js` über denselben Server wie die API laden.
 
 ### `model.py`
 
@@ -151,7 +152,9 @@ Aktuell gibt es:
 - `UserCreate` für das Erstellen eines Benutzers. Das Passwort muss zwischen 8 und 255 Zeichen lang sein.
 - `UserResponse` für die API-Antwort mit Benutzer-ID, Benutzername und E-Mail-Adresse. Das Passwort wird nicht zurückgegeben.
 - `UserLoginEmail` für eine Anmeldung mit E-Mail-Adresse und Passwort.
-- `UserLoginName` für eine später mögliche Anmeldung mit Benutzername und Passwort. Ein eigener Endpunkt dafür ist noch nicht umgesetzt.
+- `UserLoginName` für eine Anmeldung mit Benutzername und Passwort.
+- `UserMailCheck` und `UserNameCheck` für die Prüfung, ob eine E-Mail-Adresse oder ein Benutzername vorhanden ist.
+- `Login` für das gemeinsame Login-Formular. Das Feld `identifier` enthält entweder die E-Mail-Adresse oder den Benutzernamen; dazu wird `user_password` erwartet.
 - `IngredientCreate` für das Erstellen einer Zutat.
 - `IngredientResponse` für die Antwort der API mit `ingredient_id` und `ing_name`.
 
@@ -189,29 +192,29 @@ Wenn der Benutzername oder die E-Mail-Adresse bereits vergeben ist, wird die Tra
 
 ### `routes/select.py`
 
-Diese Datei enthält die Prüfung der Anmeldedaten über folgenden Endpunkt:
+Diese Datei enthält mehrere Endpunkte für die Prüfung der Anmeldedaten. Für die gemeinsame Anmeldung über das Frontend wird folgender Endpunkt verwendet:
 
 ```text
-POST /api/login-user-email
+POST /api/login
 ```
 
-Der Endpunkt erwartet die E-Mail-Adresse und das Passwort im JSON-Body:
+Der Endpunkt erwartet einen Benutzernamen oder eine E-Mail-Adresse im Feld `identifier` und das Passwort im JSON-Body:
 
 ```json
 {
-  "user_email": "beispiel@example.com",
+  "identifier": "beispiel@example.com",
   "user_password": "sicheres-passwort"
 }
 ```
 
-Zuerst wird der Benutzer anhand seiner E-Mail-Adresse aus der Datenbank gelesen. Die Funktion `verify_password()` zerlegt danach den gespeicherten Wert in Algorithmus, Anzahl der Iterationen, Salt und Hash. Aus dem eingegebenen Passwort wird mit denselben Einstellungen erneut ein PBKDF2-SHA256-Hash berechnet. `secrets.compare_digest()` vergleicht den berechneten und den gespeicherten Hash.
+Zuerst wird geprüft, ob `identifier` zu einer gespeicherten E-Mail-Adresse passt. Falls nicht, wird nach einem passenden Benutzernamen gesucht. Wird ein Benutzer gefunden, zerlegt `verify_password()` den gespeicherten Wert in Algorithmus, Anzahl der Iterationen, Salt und Hash. Aus dem eingegebenen Passwort wird mit denselben Einstellungen erneut ein PBKDF2-SHA256-Hash berechnet. `secrets.compare_digest()` vergleicht den berechneten und den gespeicherten Hash.
 
-Bei falschen Zugangsdaten wird die Anmeldung abgelehnt, ohne in der Meldung zu verraten, ob die E-Mail-Adresse oder das Passwort falsch war. Bei korrekten Daten gibt der Endpunkt momentan eine Erfolgsmeldung und die `user_id` zurück:
+Bei falschen Zugangsdaten wird die Anmeldung mit derselben allgemeinen Meldung abgelehnt. Momentan unterscheiden sich die HTTP-Statuscodes jedoch noch: Ein nicht gefundener Benutzer führt zu `404 Not Found`, ein falsches Passwort zu `401 Unauthorized`. Für einen produktiven Login sollten beide Fälle später gleich behandelt werden, damit auch über den Statuscode nicht erkennbar ist, ob ein Benutzer existiert. Bei korrekten Daten gibt der Endpunkt momentan eine Erfolgsmeldung und die `user_id` zurück:
 
 ```json
 {
   "message": "Login successful",
-  "user_id": 1
+  "user": 1
 }
 ```
 
@@ -241,13 +244,11 @@ Das Passwort wird dadurch nicht in `.env`, `.env.example` oder einer anderen Pro
 
 ## 6. Frontend
 
-Im Frontend gibt es bis jetzt die JavaScript-Datei `frontend/app.js`.
+Das Frontend besteht aktuell aus `frontend/index.html` und `frontend/app.js`. `index.html` enthält ein einfaches Formular mit einem gemeinsamen Feld für E-Mail-Adresse oder Benutzername, einem Passwortfeld und einem Bereich für die Rückmeldung.
 
-Die Funktion `loadHealth()` ruft `/api/health` auf. Danach wird im HTML angezeigt, ob die API und die Datenbank funktionieren.
+JavaScript fängt das Absenden des Formulars mit einem `submit`-Event ab. `event.preventDefault()` verhindert dabei das normale Neuladen der Seite. Anschliessend liest das Skript beide Eingaben und sendet sie mit `fetch()` als JSON per `POST` an `/api/login`. Bei einer erfolgreichen Antwort wird `Login successful` angezeigt; bei einer abgelehnten Anmeldung wird die Fehlermeldung der API ausgegeben.
 
-Die Funktion `loadRecipes()` ruft `/api/recipes` auf und möchte die erhaltenen Rezepte als Liste anzeigen. Der passende Backend-Endpunkt existiert momentan aber noch nicht. Auch eine HTML-Datei mit den Elementen `status` und `recipes` ist im Projekt noch nicht vorhanden.
-
-Das Frontend ist deshalb aktuell eher eine Vorbereitung und noch nicht komplett benutzbar.
+FastAPI liefert die Frontend-Dateien mit `StaticFiles` aus. Dadurch verwenden Frontend und API dieselbe Adresse. Die bereits vorbereiteten Funktionen `loadHealth()` und `loadRecipes()` werden momentan nicht aufgerufen. Der Endpunkt `/api/recipes` ist noch nicht umgesetzt.
 
 ## 7. Verwendete Technologien
 
@@ -275,23 +276,28 @@ Bei der Benutzerregistrierung habe ich ausserdem gelernt, dass Passwörter nicht
 
 Beim Login habe ich gelernt, dass ein Passwort-Hash nicht entschlüsselt wird. Stattdessen wird das eingegebene Passwort mit dem gespeicherten Salt und derselben Iterationszahl erneut gehasht. Erst ein sicherer Vergleich der beiden Hashes entscheidet, ob die Zugangsdaten stimmen. Eine zurückgegebene Benutzer-ID allein ersetzt noch keine Session und kein signiertes Token.
 
+### Unterstützung und eigener Lernstand
+
+Ich habe das Projekt selbst geplant und die einzelnen Schritte umgesetzt, dabei aber bei Themen Unterstützung verwendet, die noch nicht Teil meines bisherigen Schulunterrichts waren. Den JavaScript-Teil für die Verbindung des Login-Formulars mit der FastAPI-Route habe ich nicht selbstständig entwickelt. JavaScript wird in meiner Ausbildung erst im nächsten Halbjahr behandelt. Mit Unterstützung habe ich nachvollzogen, wie ein Formular-Event abgefangen, ein JSON-Body erstellt, eine Anfrage mit `fetch()` gesendet und die Antwort auf der Seite angezeigt wird.
+
+Auch die sichere Verarbeitung der Benutzerpasswörter mit PBKDF2-SHA256, zufälligem Salt und dem Vergleich der Hashes habe ich nicht selbstständig entwickelt. Dabei erhielt ich Unterstützung, weil ich vorher noch nicht wusste, wie Passwörter sicher gespeichert und geprüft werden. Durch die Umsetzung habe ich verstanden, dass Passwörter nicht verschlüsselt und später entschlüsselt, sondern mit einem Salt gehasht und durch erneutes Hashing überprüft werden. Diese Abgrenzung dokumentiere ich bewusst, damit ersichtlich ist, welche Teile mit Unterstützung entstanden sind und was ich dabei gelernt habe.
+
 ## 9. Aktueller Stand und nächste Schritte
 
-Die Grundidee, die Ordnerstruktur und die Datenbankplanung sind vorhanden. Die Verbindung zwischen FastAPI und MySQL kann mit dem Health-Endpunkt geprüft werden. Das `User`-Model, die dazugehörigen Schemas und der Endpunkt zur Benutzerregistrierung sind umgesetzt. Der neue Login-Endpunkt kann E-Mail-Adresse und Passwort anhand des gespeicherten Hashs prüfen. Das Datenbankpasswort wird beim Backend-Start verdeckt abgefragt und Benutzerpasswörter werden nur als gesalzene Hashes gespeichert.
+Die Grundidee, die Ordnerstruktur und die Datenbankplanung sind vorhanden. Die Verbindung zwischen FastAPI und MySQL kann mit dem Health-Endpunkt geprüft werden. Das `User`-Model, die dazugehörigen Schemas und der Endpunkt zur Benutzerregistrierung sind umgesetzt. Der gemeinsame Login-Endpunkt akzeptiert eine E-Mail-Adresse oder einen Benutzernamen und prüft das Passwort anhand des gespeicherten Hashs. Eine einfache HTML-Oberfläche ist über JavaScript mit diesem Endpunkt verbunden. Das Datenbankpasswort wird beim Backend-Start verdeckt abgefragt und Benutzerpasswörter werden nur als gesalzene Hashes gespeichert.
 
 Als Nächstes müssen noch folgende Punkte gemacht werden:
 
 1. Weitere Models für Rezepte, Zutaten, Kategorien und die anderen Tabellen erstellen.
 2. Die benötigten Pydantic-Schemas für diese Bereiche ergänzen.
 3. Benutzerregistrierung und Login mit gültigen, ungültigen und doppelten Eingaben testen.
-4. Den fehlenden `UNIQUE`-Constraint für `user_email` in der SQL-Struktur ergänzen.
-5. Eine sichere Session oder ein signiertes Token für dauerhaft angemeldete Benutzer ergänzen.
-6. Routen für das Erstellen, Anzeigen, Bearbeiten und Löschen von Rezepten bauen.
-7. Den Endpunkt `/api/recipes` umsetzen.
-8. Eine HTML-Oberfläche erstellen und mit `app.js` verbinden.
-9. Eingaben und Fehlermeldungen testen.
-10. Später die intelligente Rezeptsuche nach vorhandenen Zutaten umsetzen.
+4. Eine sichere Session oder ein signiertes Token für dauerhaft angemeldete Benutzer ergänzen.
+5. Routen für das Erstellen, Anzeigen, Bearbeiten und Löschen von Rezepten bauen.
+6. Den Endpunkt `/api/recipes` umsetzen.
+7. Die HTML-Oberfläche weiterentwickeln und gestalten.
+8. Eingaben, Netzwerkfehler und Fehlermeldungen testen.
+9. Später die intelligente Rezeptsuche nach vorhandenen Zutaten umsetzen.
 
 ## 10. Fazit
 
-Das Projekt befindet sich noch am Anfang, aber die wichtigste Planung ist bereits gemacht. Vor allem die Datenbank hat schon eine gute Grundlage. Das Backend kann die Datenbankverbindung testen, neue Benutzer mit gehashten Passwörtern speichern und deren Zugangsdaten beim Login prüfen. Der nächste Schritt für die Anmeldung ist eine sichere Session- oder Token-Verwaltung. Danach müssen die restlichen Models und API-Routen umgesetzt und mit dem Frontend verbunden werden.
+Das Projekt befindet sich noch am Anfang, aber die wichtigste Planung ist bereits gemacht. Vor allem die Datenbank hat schon eine gute Grundlage. Das Backend kann die Datenbankverbindung testen, neue Benutzer mit gehashten Passwörtern speichern und deren Zugangsdaten über E-Mail-Adresse oder Benutzername prüfen. Ein erstes Login-Formular ist mit der API verbunden. Der nächste Schritt für die Anmeldung ist eine sichere Session- oder Token-Verwaltung. Danach müssen die restlichen Models und API-Routen umgesetzt und mit dem Frontend verbunden werden.

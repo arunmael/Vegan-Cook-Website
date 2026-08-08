@@ -9,6 +9,17 @@ class UserBase(BaseModel):
     user_email: str = Field(min_length=1, max_length=255)
 
 
+class UserMailCheck(BaseModel):
+    """Daten, die für die E-Mail eines Benutzers erwartet werden."""
+
+    user_email: str = Field(min_length=1, max_length=255)
+
+class UserNameCheck(BaseModel):
+    """Daten, die für den Benutzernamen eines Benutzers erwartet werden."""
+
+    user_name: str = Field(min_length=1, max_length=255)
+
+
 class UserCreate(UserBase):
     """Daten, die beim Erstellen eines Benutzers erwartet werden."""
 
@@ -34,6 +45,12 @@ class UserLoginName(BaseModel):
     """Daten, die für die Anmeldung eines Benutzers per Benutzername erwartet werden."""
 
     user_name: str = Field(min_length=1, max_length=255)
+    user_password: str = Field(min_length=8, max_length=255)
+
+
+class Login(BaseModel):
+    """Daten, die für den Login eines Benutzers erwartet werden."""
+    identifier: str = Field(min_length=1, max_length=255)
     user_password: str = Field(min_length=8, max_length=255)
 
 

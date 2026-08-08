@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from backend.app.db import check_database_connection
 from backend.app.routes.create import router as create_router
 from backend.app.routes.select import router as select_router
+from fastapi.staticfiles import StaticFiles
 
 
 app = FastAPI(title="Vegan Cook Website")
@@ -18,6 +19,12 @@ def health_check():
         "status": "ok",
         "database": "reachable",
     }
+
+app.mount(
+    "/",
+    StaticFiles(directory="frontend", html=True),
+    name="frontend",
+)
 
 def creat_user():
     UserName = str(input("Enter your username: ")),

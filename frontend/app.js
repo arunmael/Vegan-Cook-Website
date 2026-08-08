@@ -20,5 +20,33 @@ async function loadRecipes() {
     }
 }
 
-loadHealth();
-loadRecipes();
+const loginForm = document.getElementById("login-form");
+
+loginForm.addEventListener("submit", async function (event) {
+    event.preventDefault();
+
+    const identifier = document.getElementById("identifier").value;
+    const userPassword = document.getElementById("user_password").value;
+
+    const response = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            identifier: identifier,
+            user_password: userPassword,
+        }),
+    });
+    const data = await response.json();
+    const message = document.getElementById("login-message");
+
+    if (response.ok) {
+        message.textContent = data.message;
+    } else {
+        message.textContent = data.detail;
+    }
+});
+
+// loadHealth();
+// loadRecipes();
