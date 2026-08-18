@@ -61,6 +61,12 @@ class IngredientCreate(BaseModel):
     ing_name: str = Field(min_length=1, max_length=255)
 
 
+class IngredientSearch(BaseModel):
+    """Daten, die bei der Suche nach einer Zutat erwartet werden."""
+
+    search_term: str = Field(min_length=1, max_length=255)
+
+
 class IngredientResponse(BaseModel):
     """Daten, die FastAPI für eine Zutat zurückgibt."""
 
@@ -68,3 +74,9 @@ class IngredientResponse(BaseModel):
     ing_name: str
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class SearchOrigin(BaseModel):
+    """Ausgewählte Herkunft, deren ID gesucht wird."""
+
+    origin_name: str = Field(min_length=1, max_length=255)

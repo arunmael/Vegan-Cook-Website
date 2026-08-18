@@ -31,3 +31,27 @@ class User(Base):
         )
 
 
+
+class Ingredient(Base):
+    """SQLAlchemy-Modell fuer die Tabelle `Ingredient`."""
+    __tablename__ = "ingredient"
+    ingredient_id: Mapped[int] = mapped_column(
+        primary_key=True,
+        autoincrement=True,
+    )
+    ing_name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+
+class Origin(Base):
+    """SQLAlchemy-Modell fuer die Tabelle `Origin`."""
+    __tablename__ = "origin"
+    origin_id: Mapped[int] = mapped_column(
+        primary_key=True,
+        autoincrement=True,
+    )
+    ori_name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )

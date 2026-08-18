@@ -11,6 +11,7 @@ app.include_router(create_router)
 app.include_router(select_router)
 
 
+
 @app.get("/api/health")
 def health_check(): 
     check_database_connection()

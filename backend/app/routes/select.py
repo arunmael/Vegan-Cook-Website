@@ -3,13 +3,24 @@ import secrets
 
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import false
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from backend.app.db import get_db
-from backend.app.model import User
-from backend.app.schema import Login, UserCreate, UserMailCheck, UserNameCheck, UserResponse, UserLoginEmail, UserLoginName
+from backend.app.model import Ingredient, Origin, User
+from backend.app.schema import (
+    IngredientResponse,
+    IngredientSearch,
+    Login,
+    SearchOrigin,
+    UserLoginEmail,
+    UserLoginName,
+    UserMailCheck,
+    UserNameCheck,
+)
 
+from backend.app.routes.create import create_ingredient
 
 router = APIRouter()
 
@@ -121,3 +132,48 @@ def login_user(user_data: Login, db: Session = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Invalid password or E-Mail/ Username.",
         )
+
+
+
+
+@router.post(
+    "/api/search-ingredient",
+    response_model=IngredientResponse | None,
+)
+def search_ingredient(user_data: IngredientSearch, db: Session = Depends(get_db)):
+    search_term = user_data.search_term.strip()
+    ingredient = (
+        db.query(Ingredient)
+        .filter(Ingredient.ing_name.ilike(search_term))
+        .first()
+    )
+    if ingredient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Zutat wurde nicht gefunden.",
+        )
+
+        
+    return ingredient
+
+
+
+@router.post("/api/search-origin", response_model=int)
+def search_origin(user_data: SearchOrigin, db: Session = Depends(get_db)):
+    origin_name = user_data.origin_name.strip()
+
+    origin = (
+        db.query(Origin)
+        .filter(Origin.ori_name.ilike(origin_name))
+        .first()
+    )
+
+    if origin is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Herkunft wurde nicht gefunden.",
+        )
+
+    return origin.origin_id
+
+

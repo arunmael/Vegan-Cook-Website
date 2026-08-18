@@ -6,9 +6,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from backend.app.db import get_db
-from backend.app.model import User
-from backend.app.schema import UserCreate, UserResponse
-
+from backend.app.model import User, Ingredient
+from backend.app.schema import UserCreate, UserResponse, IngredientCreate
 
 router = APIRouter()
 
@@ -51,3 +50,42 @@ def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
         )
 
     return new_user
+
+
+
+@router.post("/api/create-ingredient")
+def create_ingredient(
+    ingredient_data: IngredientCreate,
+    db: Session = Depends(get_db),
+):
+    ingredient_name = ingredient_data.ing_name.strip()
+    if not ingredient_name:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="The Ingredient name cannot be empty.",
+        )
+
+    existing_ingredient = (
+        db.query(Ingredient)
+        .filter(Ingredient.ing_name.ilike(ingredient_name))
+        .first()
+    )
+    if existing_ingredient is not None:
+        ingredient_id = existing_ingredient.ingredient_id
+        return ingredient_id
+
+    new_ingredient = Ingredient(ing_name=ingredient_name)
+
+    try:
+        db.add(new_ingredient)
+        db.commit()
+        db.refresh(new_ingredient)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="The Ingredient could not be created.",
+        )
+
+    ingredient_id = new_ingredient.ingredient_id
+    return ingredient_id
